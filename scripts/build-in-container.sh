@@ -6,9 +6,10 @@
 #   iw                     - virtual interface management
 #   dnsmasq                - DHCP + DNS for AP clients
 #   busybox                - reliable coreutils (Alpine's busybox-static)
+#   xray-minimal           - lightweight Xray tun-in freedom-out daemon
 #
 # Sources come from the vendored git submodules, bind-mounted read-only at
-# /externals/{hostapd,iw,dnsmasq} (our own forks - see externals/ and
+# /externals/{hostapd,iw,dnsmasq,xray-core} (our own forks - see externals/ and
 # .gitmodules). They are copied out before building so the mount stays clean.
 #
 # Output -> /out, build scratch -> /tmp/src.
@@ -47,7 +48,7 @@ vendor() {
 
 echo "### Installing build deps"
 apk add --no-cache build-base linux-headers pkgconf \
-    libnl3-dev libnl3-static openssl-dev openssl-libs-static busybox-static >/dev/null
+    libnl3-dev libnl3-static openssl-dev openssl-libs-static busybox-static go upx >/dev/null
 
 # Alpine's busybox-static is already a fully-static binary; just ship it. Used
 # by the backend scripts for reliable coreutils (Android's toybox is flaky).
@@ -117,9 +118,18 @@ make -j"$(nproc)" CFLAGS="$CF" LDFLAGS="$LDF"
 strip src/dnsmasq
 cp src/dnsmasq "$OUT"/
 
+echo "### Building xray-minimal"
+vendor xray-core
+cd "$SRC/xray-core"
+CGO_ENABLED=0 go build -o "$OUT/xray-minimal" \
+    -trimpath \
+    -ldflags "-s -w -buildid=" \
+    ./main
+upx --best --lzma "$OUT/xray-minimal" || true
+
 echo "### Results"
 cd "$OUT"
-for b in busybox hostapd hostapd_cli iw dnsmasq; do
-    printf '%-12s ' "$b"
+for b in busybox hostapd hostapd_cli iw dnsmasq xray-minimal; do
+    printf '%-14s ' "$b"
     file -b "$b"
 done

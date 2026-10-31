@@ -7,3 +7,7 @@
 [submodule "externals/hostapd"]
 	path = externals/hostapd
 	url = https://github.com/Droidspaces/hostapd-vap.git
+[submodule "backend/xray-core"]
+	path = externals/xray-core
+	url = https://github.com/vincentng295/Xray-core.git
+	branch = minimal-tun-in-freedom-out
